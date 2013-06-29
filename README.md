@@ -69,7 +69,7 @@ Fine tuning the volume threshold is the main configuration setting for how this 
 
 ## Demo:
 
-Clone and open example/index.html or [view it online](http://latentflip.com/hark/demo)
+Clone and open example/index.html or [view it online](http://latentflip.com/hark/example)
 
 
 ## Requirements:
