@@ -1,45 +1,88 @@
 var WildEmitter = require('wildemitter');
 
-module.exports = function(stream) {
-  var speakingThreshold = -45;
-  var smoothing = 0.5;
-  var pollPeriod = 100;
-  var audioContext = new webkitAudioContext();
-  var sourceNode = audioContext.createMediaStreamSource(stream);
-  var analyser = audioContext.createAnalyser();
-  var fftBins = new Float32Array(analyser.fftSize);
+function getMaxVolume (analyser, fftBins) {
+  var maxVolume = -Infinity;
+  analyser.getFloatFrequencyData(fftBins);
 
+  for(var i=0, ii=fftBins.length; i < ii; i++) {
+    if (fftBins[i] > maxVolume && fftBins[i] < 0) {
+      maxVolume = fftBins[i];
+    }
+  };
+
+  return maxVolume;
+}
+
+
+module.exports = function(stream, options) {
+  var harker = new WildEmitter();
+      
+  //Config
+  var options = options || {},
+      smoothing = (options.smoothing || 0.5),
+      interval = (options.interval || 100),
+      threshold = options.threshold,
+      play = options.play;
+
+  //Setup Audio Context
+  var audioContext = new webkitAudioContext();
+  var sourceNode, fftBins, analyser;
+
+  analyser = audioContext.createAnalyser();
   analyser.fftSize = 512;
   analyser.smoothingTimeConstant = smoothing;
-  sourceNode.connect(analyser);
+  fftBins = new Float32Array(analyser.fftSize);
+  
+  if (stream.jquery) stream = stream[0];
+  if (stream instanceof HTMLAudioElement) {
+    //Audio Tag
+    sourceNode = audioContext.createMediaElementSource(stream);
+    if (typeof play === 'undefined') play = true;
+    threshold = threshold || -65;
+  } else {
+    //WebRTC Stream
+    sourceNode = audioContext.createMediaStreamSource(stream);
+    threshold = threshold || -45;
+  }
 
-  var emitter = new WildEmitter();
-  var speaking = false;
+  sourceNode.connect(analyser);
+  if (play) analyser.connect(audioContext.destination);
+
+  harker.speaking = false;
+
+  harker.setThreshold = function(t) {
+    threshold = t;
+  };
+
+  harker.setInterval = function(i) {
+    interval = i;
+  };
 
   // Poll the analyser node to determine if speaking
   // and emit events if changed
-  setInterval(function() {
-    var currentVolume = -Infinity;
-    analyser.getFloatFrequencyData(fftBins)
+  var looper = function() {
+    setTimeout(function() {
+      var currentVolume = getMaxVolume(analyser, fftBins);
 
-    for(var i=0, ii=fftBins.length; i < ii; i++) {
-      if (fftBins[i] > currentVolume && fftBins[i] < 0) {
-        currentVolume = fftBins[i];
-      }
-    };
+      harker.emit('volume_change', currentVolume, threshold);
 
-    if (currentVolume > speakingThreshold) {
-      if (!speaking) {
-        speaking = true;
-        emitter.emit('speaking');
+      if (currentVolume > threshold) {
+        if (!harker.speaking) {
+          harker.speaking = true;
+          harker.emit('speaking');
+        }
+      } else {
+        if (harker.speaking) {
+          harker.speaking = false;
+          harker.emit('stopped_speaking');
+        }
       }
-    } else {
-      if (speaking) {
-        speaking = false;
-        emitter.emit('stopped_speaking');
-      }
-    }
-  }, pollPeriod);
 
-  return emitter;
+      looper();
+    }, interval);
+  };
+  looper();
+
+
+  return harker;
 }

@@ -1,26 +1,87 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
-var hark = require('../hark.js')
-var log = require('bows')('Demo');
+localStorage.debug = true;
 
-var getUserMedia = require('getusermedia')
+var hark = require('../hark.js');
+var bows = require('bows');
 
-getUserMedia(function(err, stream) {
-  if (err) throw err
-
+(function() {
+  //Audio Tag Demo
+  var stream = document.querySelector('audio');
   var speechEvents = hark(stream);
+  var notification = document.querySelector('#mlkSpeaking');
+  var log = bows('MLK Demo');
 
   speechEvents.on('speaking', function() {
-    document.write('Speaking<br>');
     log('speaking');
+    notification.style.display = 'block';
+  });
+
+  speechEvents.on('volume_change', function(volume, threshold) {
+    //log('volume change', volume, threshold);
   });
 
   speechEvents.on('stopped_speaking', function() {
-    document.write('Not Speaking<br>');
     log('stopped_speaking');
+    notification.style.display = 'none';
   });
-});
+})();
 
-},{"../hark.js":2,"bows":3,"getusermedia":4}],4:[function(require,module,exports){
+
+(function() {
+  //Microphone demo
+  var getUserMedia = require('getusermedia');
+  var attachmediastream = require('attachmediastream');
+  var notification = document.querySelector('#userSpeaking');
+  var log = bows('Microphone Demo');
+
+  getUserMedia(function(err, stream) {
+    if (err) throw err
+
+    attachmediastream(document.querySelector('video'), stream);
+    var speechEvents = hark(stream);
+
+    speechEvents.on('speaking', function() {
+      notification.style.display = 'block';
+      log('speaking');
+    });
+
+    speechEvents.on('volume_change', function(volume, threshold) {
+      log(volume, threshold)
+    });
+
+    speechEvents.on('stopped_speaking', function() {
+      notification.style.display = 'none';
+      log('stopped_speaking');
+    });
+  });
+})();
+
+},{"../hark.js":2,"attachmediastream":3,"bows":4,"getusermedia":5}],3:[function(require,module,exports){
+module.exports = function (element, stream, play) {
+    var autoPlay = (play === false) ? false : true;
+
+    if (autoPlay) element.autoplay = true;
+
+    // handle mozilla case
+    if (window.mozGetUserMedia) {
+        element.mozSrcObject = stream;
+        if (autoPlay) element.play();
+    } else {
+        if (typeof element.srcObject !== 'undefined') {
+            element.srcObject = stream;
+        } else if (typeof element.mozSrcObject !== 'undefined') {
+            element.mozSrcObject = stream;
+        } else if (typeof element.src !== 'undefined') {
+            element.src = URL.createObjectURL(stream);
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+};
+
+},{}],5:[function(require,module,exports){
 // getUserMedia helper by @HenrikJoreteg
 var func = (navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -52,53 +113,96 @@ module.exports = function (contstraints, cb) {
 },{}],2:[function(require,module,exports){
 var WildEmitter = require('wildemitter');
 
-module.exports = function(stream) {
-  var speakingThreshold = -45;
-  var smoothing = 0.5;
-  var pollPeriod = 100;
-  var audioContext = new webkitAudioContext();
-  var sourceNode = audioContext.createMediaStreamSource(stream);
-  var analyser = audioContext.createAnalyser();
-  var fftBins = new Float32Array(analyser.fftSize);
+function getMaxVolume (analyser, fftBins) {
+  var maxVolume = -Infinity;
+  analyser.getFloatFrequencyData(fftBins);
 
+  for(var i=0, ii=fftBins.length; i < ii; i++) {
+    if (fftBins[i] > maxVolume && fftBins[i] < 0) {
+      maxVolume = fftBins[i];
+    }
+  };
+
+  return maxVolume;
+}
+
+
+module.exports = function(stream, options) {
+  var harker = new WildEmitter();
+      
+  //Config
+  var options = options || {},
+      smoothing = (options.smoothing || 0.5),
+      interval = (options.interval || 100),
+      threshold = options.threshold,
+      play = options.play;
+
+  //Setup Audio Context
+  var audioContext = new webkitAudioContext();
+  var sourceNode, fftBins, analyser;
+
+  analyser = audioContext.createAnalyser();
   analyser.fftSize = 512;
   analyser.smoothingTimeConstant = smoothing;
-  sourceNode.connect(analyser);
+  fftBins = new Float32Array(analyser.fftSize);
+  
+  if (stream.jquery) stream = stream[0];
+  if (stream instanceof HTMLAudioElement) {
+    //Audio Tag
+    sourceNode = audioContext.createMediaElementSource(stream);
+    if (typeof play === 'undefined') play = true;
+    threshold = threshold || -65;
+  } else {
+    //WebRTC Stream
+    sourceNode = audioContext.createMediaStreamSource(stream);
+    threshold = threshold || -45;
+  }
 
-  var emitter = new WildEmitter();
-  var speaking = false;
+  sourceNode.connect(analyser);
+  if (play) analyser.connect(audioContext.destination);
+
+  harker.speaking = false;
+
+  harker.setThreshold = function(t) {
+    threshold = t;
+  };
+
+  harker.setInterval = function(i) {
+    interval = i;
+  };
 
   // Poll the analyser node to determine if speaking
   // and emit events if changed
-  setInterval(function() {
-    var currentVolume = -Infinity;
-    analyser.getFloatFrequencyData(fftBins)
+  var looper = function() {
+    setTimeout(function() {
+      var currentVolume = getMaxVolume(analyser, fftBins);
 
-    for(var i=0, ii=fftBins.length; i < ii; i++) {
-      if (fftBins[i] > currentVolume && fftBins[i] < 0) {
-        currentVolume = fftBins[i];
-      }
-    };
+      harker.emit('volume_change', currentVolume, threshold);
 
-    if (currentVolume > speakingThreshold) {
-      if (!speaking) {
-        speaking = true;
-        emitter.emit('speaking');
+      if (currentVolume > threshold) {
+        if (!harker.speaking) {
+          harker.speaking = true;
+          harker.emit('speaking');
+        }
+      } else {
+        if (harker.speaking) {
+          harker.speaking = false;
+          harker.emit('stopped_speaking');
+        }
       }
-    } else {
-      if (speaking) {
-        speaking = false;
-        emitter.emit('stopped_speaking');
-      }
-    }
-  }, pollPeriod);
 
-  return emitter;
+      looper();
+    }, interval);
+  };
+  looper();
+
+
+  return harker;
 }
 
-},{"wildemitter":5}],5:[function(require,module,exports){
+},{"wildemitter":6}],6:[function(require,module,exports){
 /*
-WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based 
+WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based
 on @visionmedia's Emitter from UI Kit.
 
 Why? I wanted it standalone.
@@ -106,14 +210,14 @@ Why? I wanted it standalone.
 I also wanted support for wildcard emitters like this:
 
 emitter.on('*', function (eventName, other, event, payloads) {
-    
+
 });
 
 emitter.on('somenamespace*', function (eventName, payloads) {
-    
+
 });
 
-Please note that callbacks triggered by wildcard registered events also get 
+Please note that callbacks triggered by wildcard registered events also get
 the event name as the first argument.
 */
 module.exports = WildEmitter;
@@ -125,7 +229,7 @@ function WildEmitter() {
 // Listen on the given `event` with `fn`. Store a group name if present.
 WildEmitter.prototype.on = function (event, groupName, fn) {
     var hasGroup = (arguments.length === 3),
-        group = hasGroup ? arguments[1] : undefined, 
+        group = hasGroup ? arguments[1] : undefined,
         func = hasGroup ? arguments[2] : arguments[1];
     func._groupName = group;
     (this.callbacks[event] = this.callbacks[event] || []).push(func);
@@ -137,7 +241,7 @@ WildEmitter.prototype.on = function (event, groupName, fn) {
 WildEmitter.prototype.once = function (event, groupName, fn) {
     var self = this,
         hasGroup = (arguments.length === 3),
-        group = hasGroup ? arguments[1] : undefined, 
+        group = hasGroup ? arguments[1] : undefined,
         func = hasGroup ? arguments[2] : arguments[1];
     function on() {
         self.off(event, on);
@@ -170,7 +274,7 @@ WildEmitter.prototype.releaseGroup = function (groupName) {
 WildEmitter.prototype.off = function (event, fn) {
     var callbacks = this.callbacks[event],
         i;
-    
+
     if (!callbacks) return this;
 
     // remove all handlers
@@ -233,7 +337,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     return result;
 };
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
@@ -269,7 +373,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
   }
 }).call(this);
 
-},{"andlog":6}],6:[function(require,module,exports){
+},{"andlog":7}],7:[function(require,module,exports){
 // follow @HenrikJoreteg and @andyet if you like this ;)
 (function () {
     var inNode = typeof window === 'undefined',
