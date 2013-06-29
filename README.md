@@ -4,6 +4,15 @@
 
 Hark is a tiny browser/commonJS module that listens to an audio stream, and emits events indicating whether the user is speaking or not.
 
+With browserify:
+
+`npm install hark`
+
+Without browserify download and use:
+
+[hark.bundle.js](https://raw.github.com/latentflip/hark/master/hark.bundle.js)
+
+
 ## Example:
 
 `npm install hark`
