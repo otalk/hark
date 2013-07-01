@@ -1,7 +1,5 @@
 # Hark
 
-### Warning: This is a work in progress
-
 Hark is a tiny browser/commonJS module that listens to an audio stream, and emits events indicating whether the user is speaking or not.
 
 With browserify:
