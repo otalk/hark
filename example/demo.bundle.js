@@ -56,32 +56,7 @@ var bows = require('bows');
   });
 })();
 
-},{"../hark.js":2,"attachmediastream":3,"bows":4,"getusermedia":5}],3:[function(require,module,exports){
-module.exports = function (element, stream, play) {
-    var autoPlay = (play === false) ? false : true;
-
-    if (autoPlay) element.autoplay = true;
-
-    // handle mozilla case
-    if (window.mozGetUserMedia) {
-        element.mozSrcObject = stream;
-        if (autoPlay) element.play();
-    } else {
-        if (typeof element.srcObject !== 'undefined') {
-            element.srcObject = stream;
-        } else if (typeof element.mozSrcObject !== 'undefined') {
-            element.mozSrcObject = stream;
-        } else if (typeof element.src !== 'undefined') {
-            element.src = URL.createObjectURL(stream);
-        } else {
-            return false;
-        }
-    }
-
-    return true;
-};
-
-},{}],5:[function(require,module,exports){
+},{"../hark.js":2,"bows":3,"getusermedia":4,"attachmediastream":5}],4:[function(require,module,exports){
 // getUserMedia helper by @HenrikJoreteg
 var func = (navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -110,6 +85,31 @@ module.exports = function (contstraints, cb) {
     });
 };
 
+},{}],5:[function(require,module,exports){
+module.exports = function (element, stream, play) {
+    var autoPlay = (play === false) ? false : true;
+
+    if (autoPlay) element.autoplay = true;
+
+    // handle mozilla case
+    if (window.mozGetUserMedia) {
+        element.mozSrcObject = stream;
+        if (autoPlay) element.play();
+    } else {
+        if (typeof element.srcObject !== 'undefined') {
+            element.srcObject = stream;
+        } else if (typeof element.mozSrcObject !== 'undefined') {
+            element.mozSrcObject = stream;
+        } else if (typeof element.src !== 'undefined') {
+            element.src = URL.createObjectURL(stream);
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+};
+
 },{}],2:[function(require,module,exports){
 var WildEmitter = require('wildemitter');
 
@@ -129,7 +129,10 @@ function getMaxVolume (analyser, fftBins) {
 
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
-      
+
+  // make it not break in non-supported browsers
+  if (!window.webkitAudioContext) return harker;
+
   //Config
   var options = options || {},
       smoothing = (options.smoothing || 0.5),
@@ -145,7 +148,7 @@ module.exports = function(stream, options) {
   analyser.fftSize = 512;
   analyser.smoothingTimeConstant = smoothing;
   fftBins = new Float32Array(analyser.fftSize);
-  
+
   if (stream.jquery) stream = stream[0];
   if (stream instanceof HTMLAudioElement) {
     //Audio Tag
@@ -202,7 +205,7 @@ module.exports = function(stream, options) {
 
 },{"wildemitter":6}],6:[function(require,module,exports){
 /*
-WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based
+WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based 
 on @visionmedia's Emitter from UI Kit.
 
 Why? I wanted it standalone.
@@ -210,14 +213,14 @@ Why? I wanted it standalone.
 I also wanted support for wildcard emitters like this:
 
 emitter.on('*', function (eventName, other, event, payloads) {
-
+    
 });
 
 emitter.on('somenamespace*', function (eventName, payloads) {
-
+    
 });
 
-Please note that callbacks triggered by wildcard registered events also get
+Please note that callbacks triggered by wildcard registered events also get 
 the event name as the first argument.
 */
 module.exports = WildEmitter;
@@ -229,7 +232,7 @@ function WildEmitter() {
 // Listen on the given `event` with `fn`. Store a group name if present.
 WildEmitter.prototype.on = function (event, groupName, fn) {
     var hasGroup = (arguments.length === 3),
-        group = hasGroup ? arguments[1] : undefined,
+        group = hasGroup ? arguments[1] : undefined, 
         func = hasGroup ? arguments[2] : arguments[1];
     func._groupName = group;
     (this.callbacks[event] = this.callbacks[event] || []).push(func);
@@ -241,7 +244,7 @@ WildEmitter.prototype.on = function (event, groupName, fn) {
 WildEmitter.prototype.once = function (event, groupName, fn) {
     var self = this,
         hasGroup = (arguments.length === 3),
-        group = hasGroup ? arguments[1] : undefined,
+        group = hasGroup ? arguments[1] : undefined, 
         func = hasGroup ? arguments[2] : arguments[1];
     function on() {
         self.off(event, on);
@@ -274,7 +277,7 @@ WildEmitter.prototype.releaseGroup = function (groupName) {
 WildEmitter.prototype.off = function (event, fn) {
     var callbacks = this.callbacks[event],
         i;
-
+    
     if (!callbacks) return this;
 
     // remove all handlers
@@ -337,7 +340,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     return result;
 };
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
