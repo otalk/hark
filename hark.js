@@ -16,7 +16,10 @@ function getMaxVolume (analyser, fftBins) {
 
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
-      
+
+  // make it not break in non-supported browsers
+  if (!window.webkitAudioContext) return harker;
+
   //Config
   var options = options || {},
       smoothing = (options.smoothing || 0.5),
@@ -32,7 +35,7 @@ module.exports = function(stream, options) {
   analyser.fftSize = 512;
   analyser.smoothingTimeConstant = smoothing;
   fftBins = new Float32Array(analyser.fftSize);
-  
+
   if (stream.jquery) stream = stream[0];
   if (stream instanceof HTMLAudioElement) {
     //Audio Tag
