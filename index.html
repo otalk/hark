@@ -11,9 +11,69 @@
         <div class="wrap">
             <a href="https://github.com/HenrikJoreteg/SimpleWebRTC"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
             <section>
-                <h1>AndReadme</h1>
-<p>Makes nice &amp;yet readmes for &amp;yeti&#39;s modules.</p>
-<p>Will checkout/create a gh-pages branch and populate an index.html with the contents of README.md.</p>
+                <h1>Hark</h1>
+<p>Hark is a tiny browser/commonJS module that listens to an audio stream, and emits events indicating whether the user is speaking or not.</p>
+<p>With browserify:</p>
+<p><code>npm install hark</code></p>
+<p>Without browserify download and use:</p>
+<p><a href="https://raw.github.com/latentflip/hark/master/hark.bundle.js">hark.bundle.js</a></p>
+<h2>Example:</h2>
+<p><code>npm install hark</code></p>
+<p>If you aren&#39;t using browserify, you&#39;ll want hark.bundle.js.</p>
+<pre><code class="lang-javascript">  var hark = require(&#39;../hark.js&#39;)
+
+  var getUserMedia = require(&#39;getusermedia&#39;)
+
+  getUserMedia(function(err, stream) {
+    if (err) throw err
+
+    var options = {};
+    var speechEvents = hark(stream, options);
+
+    speechEvents.on(&#39;speaking&#39;, function() {
+      console.log(&#39;speaking&#39;);
+    });
+
+    speechEvents.on(&#39;stopped_speaking&#39;, function() {
+      console.log(&#39;stopped_speaking&#39;);
+    });
+  });</code></pre>
+<h2>How does hark work?</h2>
+<p>Hark uses the webaudio API to FFT (get the power of) the audio in the audio stream. If the power is above a threshold, it&#39;s determined to be speech.</p>
+<h2>Usage</h2>
+<pre><code class="lang-javascript">var speech = hark(stream, options);
+speech.on(&#39;speaking&#39;, function() {
+  console.log(&#39;Speaking!&#39;);
+});</code></pre>
+<ul>
+<li>Pass hark either a webrtc stream which has audio enabled, or an audio element, and an optional options hash (see below for options).</li>
+<li>hark returns an event emitter with the following events:<ul>
+<li><code>speaking</code> emitted when the stream appears to be speaking</li>
+<li><code>stopped_speaking</code> emitted when the audio doesn&#39;t seem to be speaking</li>
+<li><code>current_volume</code> emitted on every poll event by the event emitter with the current volume (in decibels) and the current threshold for speech</li>
+</ul>
+</li>
+<li>The hark object also has the following methods to update the config of hark. Both of these options can be passed in on instantiation, but you may wish to alter them either for debug or fine tuning as your app runs.<ul>
+<li><code>setInterval(interval_in_ms)</code> change </li>
+<li><code>setThreshold(threshold_in_db)</code> change the minimum volume at which the audio will emit a <code>speaking</code> event</li>
+</ul>
+</li>
+</ul>
+<h2>Options</h2>
+<ul>
+<li><code>interval</code> (optional, default 100ms) how frequently the analyser polls the audio stream to check if speaking has started or stopped. This will also be the frequency of the <code>volume_change</code> events.</li>
+<li><code>threshold</code> (optional, default -65db for audio tags, -45db for rtc streams)  the volume at which <code>speaking</code>/<code>stopped\_speaking</code> events will be fired</li>
+<li><code>play</code> (optional, default true for audio tags, false for webrtc streams) whether the audio stream should also be piped to the speakers, or just swallowed by the analyser. Typically for audio tags you would want to hear them, but for microphone based webrtc streams you may not to avoid feedback.</li>
+</ul>
+<h2>Understanding dB/volume threshold</h2>
+<p>Fine tuning the volume threshold is the main configuration setting for how this module will behave. The levels of -65db and -45db for audio tags and rtc streams respectively have been chosen based on some basic experimentation on mysetup, but you may wish to change them (and should if it improves your app).</p>
+<p><strong>What is dB?</strong> Decibels are how sound is measured. The loudest sounds on your system will be at 0dB, and silence in webaudio is -100dB. Speech seems to be between roughly -65dB and -45dB depending on the volume and type of source. If speaking events are being fired too frequently, you would make this number higher (i.e. towards 0). If they are not firing frequently enough (you are speaking loudly but no events are firing), make the number closer to -100dB).</p>
+<h2>Demo:</h2>
+<p>Clone and open example/index.html or <a href="http://latentflip.com/hark/example">view it online</a></p>
+<h2>Requirements:</h2>
+<p>Chrome 27+ currently</p>
+<h2>License</h2>
+<p>MIT</p>
 
             </section>
             <footer>
