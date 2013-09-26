@@ -36,7 +36,7 @@ var bows = require('bows');
   getUserMedia(function(err, stream) {
     if (err) throw err
 
-    attachmediastream(document.querySelector('video'), stream);
+    attachmediastream(stream, document.querySelector('video'));
     var speechEvents = hark(stream);
 
     speechEvents.on('speaking', function() {
