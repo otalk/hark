@@ -1,4 +1,4 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 localStorage.debug = true;
 
 var hark = require('../hark.js');
@@ -56,61 +56,7 @@ var bows = require('bows');
   });
 })();
 
-},{"../hark.js":2,"bows":3,"getusermedia":4,"attachmediastream":5}],4:[function(require,module,exports){
-// getUserMedia helper by @HenrikJoreteg
-var func = (navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia ||
-            navigator.msGetUserMedia);
-
-
-module.exports = function (contstraints, cb) {
-    var options;
-    var haveOpts = arguments.length === 2;
-    var defaultOpts = {video: true, audio: true};
-
-    // make contstraints optional
-    if (!haveOpts) {
-        cb = contstraints;
-        contstraints = defaultOpts;
-    }
-
-    // treat lack of browser support like an error
-    if (!func) return cb(new Error('notSupported'));
-
-    func.call(navigator, contstraints, function (stream) {
-        cb(null, stream);
-    }, function (err) {
-        cb(err);
-    });
-};
-
-},{}],5:[function(require,module,exports){
-module.exports = function (element, stream, play) {
-    var autoPlay = (play === false) ? false : true;
-
-    if (autoPlay) element.autoplay = true;
-
-    // handle mozilla case
-    if (window.mozGetUserMedia) {
-        element.mozSrcObject = stream;
-        if (autoPlay) element.play();
-    } else {
-        if (typeof element.srcObject !== 'undefined') {
-            element.srcObject = stream;
-        } else if (typeof element.mozSrcObject !== 'undefined') {
-            element.mozSrcObject = stream;
-        } else if (typeof element.src !== 'undefined') {
-            element.src = URL.createObjectURL(stream);
-        } else {
-            return false;
-        }
-    }
-
-    return true;
-};
-
-},{}],2:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":3,"bows":4,"getusermedia":6}],2:[function(require,module,exports){
 var WildEmitter = require('wildemitter');
 
 function getMaxVolume (analyser, fftBins) {
@@ -130,8 +76,10 @@ function getMaxVolume (analyser, fftBins) {
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
 
+  var audioContextType = window.webkitAudioContext || window.AudioContext;
+
   // make it not break in non-supported browsers
-  if (!window.webkitAudioContext) return harker;
+  if (!audioContextType) return harker;
 
   //Config
   var options = options || {},
@@ -141,7 +89,7 @@ module.exports = function(stream, options) {
       play = options.play;
 
   //Setup Audio Context
-  var audioContext = new webkitAudioContext();
+  var audioContext = new audioContextType();
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
@@ -203,7 +151,187 @@ module.exports = function(stream, options) {
   return harker;
 }
 
-},{"wildemitter":6}],6:[function(require,module,exports){
+},{"wildemitter":7}],3:[function(require,module,exports){
+module.exports = function (stream, el, options) {
+    var URL = window.URL;
+    var opts = {
+        autoplay: true,
+        mirror: false,
+        muted: false
+    };
+    var element = el || document.createElement('video');
+    var item;
+
+    if (options) {
+        for (item in options) {
+            opts[item] = options[item];
+        }
+    }
+
+    if (opts.autoplay) element.autoplay = 'autoplay';
+    if (opts.muted) element.muted = true;
+    if (opts.mirror) {
+        ['', 'moz', 'webkit', 'o', 'ms'].forEach(function (prefix) {
+            var styleName = prefix ? prefix + 'Transform' : 'transform';
+            element.style[styleName] = 'scaleX(-1)';
+        });
+    }
+
+    // this first one should work most everywhere now
+    // but we have a few fallbacks just in case.
+    if (URL && URL.createObjectURL) {
+        element.src = URL.createObjectURL(stream);
+    } else if (element.srcObject) {
+        element.srcObject = stream;
+    } else if (element.mozSrcObject) {
+        element.mozSrcObject = stream;
+    } else {
+        return false;
+    }
+
+    return element;
+};
+
+},{}],4:[function(require,module,exports){
+(function() {
+  var inNode = typeof window === 'undefined',
+      ls = !inNode && window.localStorage,
+      debug = ls.debug,
+      logger = require('andlog'),
+      goldenRatio = 0.618033988749895,
+      hue = 0,
+      padLength = 15,
+      noop = function() {},
+      yieldColor,
+      bows,
+      debugRegex;
+
+  yieldColor = function() {
+    hue += goldenRatio;
+    hue = hue % 1;
+    return hue * 360;
+  };
+
+  var debugRegex = debug && debug[0]==='/' && new RegExp(debug.substring(1,debug.length-1));
+
+  bows = function(str) {
+    var msg;
+    msg = "%c" + (str.slice(0, padLength));
+    msg += Array(padLength + 3 - msg.length).join(' ') + '|';
+
+    if (debugRegex && !str.match(debugRegex)) return noop;
+    if (!window.chrome) return logger.log.bind(logger, msg);
+    return logger.log.bind(logger, msg, "color: hsl(" + (yieldColor()) + ",99%,40%); font-weight: bold");
+  };
+
+  bows.config = function(config) {
+    if (config.padLength) {
+      return padLength = config.padLength;
+    }
+  };
+
+  if (typeof module !== 'undefined') {
+    module.exports = bows;
+  } else {
+    window.bows = bows;
+  }
+}).call();
+
+},{"andlog":5}],5:[function(require,module,exports){
+// follow @HenrikJoreteg and @andyet if you like this ;)
+(function () {
+    var inNode = typeof window === 'undefined',
+        ls = !inNode && window.localStorage,
+        out = {};
+
+    if (inNode) {
+        module.exports = console;
+        return;
+    }
+
+    if (ls && ls.debug && window.console) {
+        out = window.console;
+    } else {
+        var methods = "assert,count,debug,dir,dirxml,error,exception,group,groupCollapsed,groupEnd,info,log,markTimeline,profile,profileEnd,time,timeEnd,trace,warn".split(","),
+            l = methods.length,
+            fn = function () {};
+
+        while (l--) {
+            out[methods[l]] = fn;
+        }
+    }
+    if (typeof exports !== 'undefined') {
+        module.exports = out;
+    } else {
+        window.console = out;
+    }
+})();
+
+},{}],6:[function(require,module,exports){
+// getUserMedia helper by @HenrikJoreteg
+var func = (navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia);
+
+
+module.exports = function (constraints, cb) {
+    var options;
+    var haveOpts = arguments.length === 2;
+    var defaultOpts = {video: true, audio: true};
+    var error;
+    var denied = 'PERMISSION_DENIED';
+    var notSatified = 'CONSTRAINT_NOT_SATISFIED';
+
+    // make constraints optional
+    if (!haveOpts) {
+        cb = constraints;
+        constraints = defaultOpts;
+    }
+
+    // treat lack of browser support like an error
+    if (!func) {
+        // throw proper error per spec
+        error = new Error('NavigatorUserMediaError');
+        error.name = 'NOT_SUPPORTED_ERROR';
+        return cb(error);
+    }
+
+    func.call(navigator, constraints, function (stream) {
+        cb(null, stream);
+    }, function (err) {
+        var error;
+        // coerce into an error object since FF gives us a string
+        // there are only two valid names according to the spec
+        // we coerce all non-denied to "constraint not satisfied".
+        if (typeof err === 'string') {
+            error = new Error('NavigatorUserMediaError');
+            if (err === denied) {
+                error.name = denied;
+            } else {
+                error.name = notSatified;
+            }
+        } else {
+            // if we get an error object make sure '.name' property is set
+            // according to spec: http://dev.w3.org/2011/webrtc/editor/getusermedia.html#navigatorusermediaerror-and-navigatorusermediaerrorcallback
+            error = err;
+            if (!error.name) {
+                // this is likely chrome which
+                // sets a property called "ERROR_DENIED" on the error object
+                // if so we make sure to set a name
+                if (error[denied]) {
+                    err.name = denied;
+                } else {
+                    err.name = notSatified;
+                }
+            }
+        }
+
+        cb(error);
+    });
+};
+
+},{}],7:[function(require,module,exports){
 /*
 WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based 
 on @visionmedia's Emitter from UI Kit.
@@ -339,72 +467,6 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     }
     return result;
 };
-
-},{}],3:[function(require,module,exports){
-(function(window) {
-  var logger = require('andlog'),
-      goldenRatio = 0.618033988749895,
-      hue = 0,
-      padLength = 15,
-      yieldColor,
-      bows;
-
-  yieldColor = function() {
-    hue += goldenRatio;
-    hue = hue % 1;
-    return hue * 360;
-  };
-
-  bows = function(str) {
-    var msg;
-    msg = "%c" + (str.slice(0, padLength));
-    msg += Array(padLength + 3 - msg.length).join(' ') + '|';
-
-    return logger.log.bind(logger, msg, "color: hsl(" + (yieldColor()) + ",99%,40%); font-weight: bold");
-  };
-
-  bows.config = function(config) {
-    if (config.padLength) {
-      return padLength = config.padLength;
-    }
-  };
-
-  if (typeof module !== 'undefined') {
-    module.exports = bows;
-  } else {
-    window.bows = bows;
-  }
-}).call(this);
-
-},{"andlog":7}],7:[function(require,module,exports){
-// follow @HenrikJoreteg and @andyet if you like this ;)
-(function () {
-    var inNode = typeof window === 'undefined',
-        ls = !inNode && window.localStorage,
-        out = {};
-
-    if (inNode) {
-        module.exports = console;
-        return;
-    }
-
-    if (ls && ls.debug && window.console) {
-        out = window.console;
-    } else {
-        var methods = "assert,count,debug,dir,dirxml,error,exception,group,groupCollapsed,groupEnd,info,log,markTimeline,profile,profileEnd,time,timeEnd,trace,warn".split(","),
-            l = methods.length,
-            fn = function () {};
-
-        while (l--) {
-            out[methods[l]] = fn;
-        }
-    }
-    if (typeof exports !== 'undefined') {
-        module.exports = out;
-    } else {
-        window.console = out;
-    }
-})();
 
 },{}]},{},[1])
 ;
