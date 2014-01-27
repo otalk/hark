@@ -14,10 +14,12 @@ function getMaxVolume (analyser, fftBins) {
 }
 
 
+var audioContextType = window.webkitAudioContext || window.AudioContext;
+// use a single audio context due to hardware limits
+var audioContext = null;
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
 
-  var audioContextType = window.webkitAudioContext || window.AudioContext;
 
   // make it not break in non-supported browsers
   if (!audioContextType) return harker;
@@ -30,7 +32,9 @@ module.exports = function(stream, options) {
       play = options.play;
 
   //Setup Audio Context
-  var audioContext = new audioContextType();
+  if (!audioContext) {
+    audioContext = new audioContextType();
+  }
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();

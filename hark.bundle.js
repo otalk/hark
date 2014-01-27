@@ -1,6 +1,5 @@
-(function(e){if("function"==typeof bootstrap)bootstrap("hark",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeHark=e}else"undefined"!=typeof window?window.hark=e():global.hark=e()})(function(){var define,ses,bootstrap,module,exports;
-return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var WildEmitter = require('wildemitter');
+!function(e){if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.hark=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(_dereq_,module,exports){
+var WildEmitter = _dereq_('wildemitter');
 
 function getMaxVolume (analyser, fftBins) {
   var maxVolume = -Infinity;
@@ -16,10 +15,12 @@ function getMaxVolume (analyser, fftBins) {
 }
 
 
+var audioContextType = window.webkitAudioContext || window.AudioContext;
+// use a single audio context due to hardware limits
+var audioContext = null;
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
 
-  var audioContextType = window.webkitAudioContext || window.AudioContext;
 
   // make it not break in non-supported browsers
   if (!audioContextType) return harker;
@@ -32,7 +33,9 @@ module.exports = function(stream, options) {
       play = options.play;
 
   //Setup Audio Context
-  var audioContext = new audioContextType();
+  if (!audioContext) {
+    audioContext = new audioContextType();
+  }
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
@@ -94,7 +97,7 @@ module.exports = function(stream, options) {
   return harker;
 }
 
-},{"wildemitter":2}],2:[function(require,module,exports){
+},{"wildemitter":2}],2:[function(_dereq_,module,exports){
 /*
 WildEmitter.js is a slim little event emitter by @henrikjoreteg largely based 
 on @visionmedia's Emitter from UI Kit.
@@ -234,4 +237,3 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
 },{}]},{},[1])
 (1)
 });
-;
