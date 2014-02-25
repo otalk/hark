@@ -30,7 +30,8 @@ module.exports = function(stream, options) {
       smoothing = (options.smoothing || 0.5),
       interval = (options.interval || 100),
       threshold = options.threshold,
-      play = options.play;
+      play = options.play,
+      running = true;
 
   //Setup Audio Context
   if (!audioContext) {
@@ -67,11 +68,21 @@ module.exports = function(stream, options) {
   harker.setInterval = function(i) {
     interval = i;
   };
+  
+  harker.stop = function() {
+	  running = false;
+  };
 
   // Poll the analyser node to determine if speaking
   // and emit events if changed
   var looper = function() {
     setTimeout(function() {
+      
+      //check if stop has been called
+      if(!running) {
+        return;
+      }
+      
       var currentVolume = getMaxVolume(analyser, fftBins);
 
       harker.emit('volume_change', currentVolume, threshold);
