@@ -60,6 +60,8 @@ speech.on('speaking', function() {
 * The hark object also has the following methods to update the config of hark. Both of these options can be passed in on instantiation, but you may wish to alter them either for debug or fine tuning as your app runs.
   * `setInterval(interval_in_ms)` change 
   * `setThreshold(threshold_in_db)` change the minimum volume at which the audio will emit a `speaking` event
+* hark can be stopped by calling this method
+  * `stop()` will stop the polling and events will not be emitted.
 
 ## Options
 
