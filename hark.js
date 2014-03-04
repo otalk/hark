@@ -69,7 +69,12 @@ module.exports = function(stream, options) {
   };
   
   harker.stop = function() {
-	  running = false;
+    running = false;
+    harker.emit('volume_change', -100, threshold);
+    if (harker.speaking) {
+      harker.speaking = false;
+      harker.emit('stopped_speaking');
+    }
   };
 
   // Poll the analyser node to determine if speaking
