@@ -14,7 +14,7 @@
     "attachmediastream": "0.0.1"
   },
   "dependencies": {
-    "wildemitter": "0.0.5"
+    "wildemitter": "1.0.x"
   },
   "readmeFilename": "README.md"
 }
