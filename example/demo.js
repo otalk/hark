@@ -1,7 +1,14 @@
-localStorage.debug = true;
-
 var hark = require('../hark.js');
 var bows = require('bows');
+
+var tagVolumes = [];
+var streamVolumes = [];
+var referenceVolumes = [];
+for (var i = 0; i < 100; i++) {
+  tagVolumes.push(-100);
+  streamVolumes.push(-100);
+  referenceVolumes.push(-45);
+}
 
 (function() {
   //Audio Tag Demo
@@ -17,6 +24,8 @@ var bows = require('bows');
 
   speechEvents.on('volume_change', function(volume, threshold) {
     //log('volume change', volume, threshold);
+    tagVolumes.push(volume);
+    tagVolumes.shift();
   });
 
   speechEvents.on('stopped_speaking', function() {
@@ -46,6 +55,8 @@ var bows = require('bows');
 
     speechEvents.on('volume_change', function(volume, threshold) {
       log(volume, threshold)
+      streamVolumes.push(volume);
+      streamVolumes.shift();
     });
 
     speechEvents.on('stopped_speaking', function() {
@@ -53,4 +64,35 @@ var bows = require('bows');
       log('stopped_speaking');
     });
   });
+})();
+
+(function () {
+
+  function drawLine(canvas, data, color) {
+    var drawContext = canvas.getContext('2d');
+    drawContext.moveTo(0,canvas.height);
+    drawContext.beginPath();
+    drawContext.strokeStyle = color;
+    for (var i = 0; i < data.length; i++) {
+      var value = -data[i];
+      var percent = value / 100;
+      var height = canvas.height * percent;
+      var vOffset = height; //canvas.height - height - 5;
+      var hOffset = i * canvas.width / 100.0;
+      drawContext.lineTo(hOffset, vOffset);
+    }
+    drawContext.stroke();
+  }
+  function draw() {
+    var canvas = document.querySelector('canvas');
+    if (!canvas) return;
+    var drawContext = canvas.getContext('2d');
+    drawContext.clearRect (0, 0, canvas.width, canvas.height);
+
+    drawLine(canvas, tagVolumes, 'green');
+    drawLine(canvas, streamVolumes, 'blue');
+    drawLine(canvas, referenceVolumes, 'black');
+    window.requestAnimationFrame(draw);
+  }
+  window.requestAnimationFrame(draw);
 })();
