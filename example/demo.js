@@ -7,7 +7,7 @@ var referenceVolumes = [];
 for (var i = 0; i < 100; i++) {
   tagVolumes.push(-100);
   streamVolumes.push(-100);
-  referenceVolumes.push(-45);
+  referenceVolumes.push(-50);
 }
 
 (function() {

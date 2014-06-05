@@ -8,7 +8,7 @@ var referenceVolumes = [];
 for (var i = 0; i < 100; i++) {
   tagVolumes.push(-100);
   streamVolumes.push(-100);
-  referenceVolumes.push(-45);
+  referenceVolumes.push(-50);
 }
 
 (function() {
@@ -98,42 +98,7 @@ for (var i = 0; i < 100; i++) {
   window.requestAnimationFrame(draw);
 })();
 
-},{"../hark.js":2,"attachmediastream":5,"bows":4,"getusermedia":3}],3:[function(require,module,exports){
-// getUserMedia helper by @HenrikJoreteg
-var func = (navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia ||
-            navigator.msGetUserMedia);
-
-
-module.exports = function (constraints, cb) {
-    var options;
-    var haveOpts = arguments.length === 2;
-    var defaultOpts = {video: true, audio: true};
-
-    // make constraints optional
-    if (!haveOpts) {
-        cb = constraints;
-        constraints = defaultOpts;
-    }
-
-    // treat lack of browser support like an error
-    if (!func) {
-        // throw proper error per spec
-        var error = new Error('NavigatorUserMediaError');
-        error.reason = "NOT_SUPPORTED";
-        return cb(error);
-    }
-
-    func.call(navigator, constraints, function (stream) {
-        cb(null, stream);
-    }, function (err) {
-        err.reason = err.name || "PERMISSION_DENIED";
-        cb(err);
-    });
-};
-
-},{}],5:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":3,"bows":5,"getusermedia":4}],3:[function(require,module,exports){
 module.exports = function (stream, el, options) {
     var URL = window.URL;
     var opts = {
@@ -174,6 +139,41 @@ module.exports = function (stream, el, options) {
     return element;
 };
 
+},{}],4:[function(require,module,exports){
+// getUserMedia helper by @HenrikJoreteg
+var func = (navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia);
+
+
+module.exports = function (constraints, cb) {
+    var options;
+    var haveOpts = arguments.length === 2;
+    var defaultOpts = {video: true, audio: true};
+
+    // make constraints optional
+    if (!haveOpts) {
+        cb = constraints;
+        constraints = defaultOpts;
+    }
+
+    // treat lack of browser support like an error
+    if (!func) {
+        // throw proper error per spec
+        var error = new Error('NavigatorUserMediaError');
+        error.reason = "NOT_SUPPORTED";
+        return cb(error);
+    }
+
+    func.call(navigator, constraints, function (stream) {
+        cb(null, stream);
+    }, function (err) {
+        err.reason = err.name || "PERMISSION_DENIED";
+        cb(err);
+    });
+};
+
 },{}],2:[function(require,module,exports){
 var WildEmitter = require('wildemitter');
 
@@ -181,7 +181,7 @@ function getMaxVolume (analyser, fftBins) {
   var maxVolume = -Infinity;
   analyser.getFloatFrequencyData(fftBins);
 
-  for(var i=0, ii=fftBins.length; i < ii; i++) {
+  for(var i=4, ii=fftBins.length; i < ii; i++) {
     if (fftBins[i] > maxVolume && fftBins[i] < 0) {
       maxVolume = fftBins[i];
     }
@@ -226,11 +226,11 @@ module.exports = function(stream, options) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;
-    threshold = threshold || -45;
+    threshold = threshold || -50;
   } else {
     //WebRTC Stream
     sourceNode = audioContext.createMediaStreamSource(stream);
-    threshold = threshold || -45;
+    threshold = threshold || -50;
   }
 
   sourceNode.connect(analyser);
@@ -445,7 +445,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     return result;
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,

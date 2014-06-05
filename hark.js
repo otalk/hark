@@ -4,7 +4,7 @@ function getMaxVolume (analyser, fftBins) {
   var maxVolume = -Infinity;
   analyser.getFloatFrequencyData(fftBins);
 
-  for(var i=0, ii=fftBins.length; i < ii; i++) {
+  for(var i=4, ii=fftBins.length; i < ii; i++) {
     if (fftBins[i] > maxVolume && fftBins[i] < 0) {
       maxVolume = fftBins[i];
     }
@@ -49,11 +49,11 @@ module.exports = function(stream, options) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;
-    threshold = threshold || -45;
+    threshold = threshold || -50;
   } else {
     //WebRTC Stream
     sourceNode = audioContext.createMediaStreamSource(stream);
-    threshold = threshold || -45;
+    threshold = threshold || -50;
   }
 
   sourceNode.connect(analyser);
