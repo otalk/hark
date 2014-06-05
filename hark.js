@@ -26,10 +26,11 @@ module.exports = function(stream, options) {
 
   //Config
   var options = options || {},
-      smoothing = (options.smoothing || 0.5),
-      interval = (options.interval || 100),
+      smoothing = (options.smoothing || 0.1),
+      interval = (options.interval || 50),
       threshold = options.threshold,
       play = options.play,
+      history = options.history || 10,
       running = true;
 
   //Setup Audio Context
@@ -48,7 +49,7 @@ module.exports = function(stream, options) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;
-    threshold = threshold || -65;
+    threshold = threshold || -45;
   } else {
     //WebRTC Stream
     sourceNode = audioContext.createMediaStreamSource(stream);
@@ -76,6 +77,10 @@ module.exports = function(stream, options) {
       harker.emit('stopped_speaking');
     }
   };
+  harker.speakingHistory = [];
+  for (var i = 0; i < history; i++) {
+      harker.speakingHistory.push(0);
+  }
 
   // Poll the analyser node to determine if speaking
   // and emit events if changed
@@ -91,17 +96,27 @@ module.exports = function(stream, options) {
 
       harker.emit('volume_change', currentVolume, threshold);
 
-      if (currentVolume > threshold) {
-        if (!harker.speaking) {
+      var history = 0;
+      if (currentVolume > threshold && !harker.speaking) {
+        // trigger quickly, short history
+        for (var i = harker.speakingHistory.length - 3; i < harker.speakingHistory.length; i++) {
+          history += harker.speakingHistory[i];
+        }
+        if (history >= 2) {
           harker.speaking = true;
           harker.emit('speaking');
         }
-      } else {
-        if (harker.speaking) {
+      } else if (currentVolume < threshold && harker.speaking) {
+        for (var i = 0; i < harker.speakingHistory.length; i++) {
+          history += harker.speakingHistory[i];
+        }
+        if (history == 0) {
           harker.speaking = false;
           harker.emit('stopped_speaking');
         }
       }
+      harker.speakingHistory.shift();
+      harker.speakingHistory.push(0 + (currentVolume > threshold));
 
       looper();
     }, interval);

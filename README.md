@@ -66,14 +66,14 @@ speech.on('speaking', function() {
 ## Options
 
 * `interval` (optional, default 100ms) how frequently the analyser polls the audio stream to check if speaking has started or stopped. This will also be the frequency of the `volume_change` events.
-* `threshold` (optional, default -65db for audio tags, -45db for rtc streams)  the volume at which `speaking`/`stopped\_speaking` events will be fired
+* `threshold` (optional, default -45db)  the volume at which `speaking`/`stopped\_speaking` events will be fired
 * `play` (optional, default true for audio tags, false for webrtc streams) whether the audio stream should also be piped to the speakers, or just swallowed by the analyser. Typically for audio tags you would want to hear them, but for microphone based webrtc streams you may not to avoid feedback.
 
 ## Understanding dB/volume threshold
 
-Fine tuning the volume threshold is the main configuration setting for how this module will behave. The levels of -65db and -45db for audio tags and rtc streams respectively have been chosen based on some basic experimentation on mysetup, but you may wish to change them (and should if it improves your app).
+Fine tuning the volume threshold is the main configuration setting for how this module will behave. The level of -45db have been chosen based on some basic experimentation on mysetup, but you may wish to change them (and should if it improves your app).
 
-**What is dB?** Decibels are how sound is measured. The loudest sounds on your system will be at 0dB, and silence in webaudio is -100dB. Speech seems to be between roughly -65dB and -45dB depending on the volume and type of source. If speaking events are being fired too frequently, you would make this number higher (i.e. towards 0). If they are not firing frequently enough (you are speaking loudly but no events are firing), make the number closer to -100dB).
+**What is dB?** Decibels are how sound is measured. The loudest sounds on your system will be at 0dB, and silence in webaudio is -100dB. Speech seems to be above -45dB depending on the volume and type of source. If speaking events are being fired too frequently, you would make this number higher (i.e. towards 0). If they are not firing frequently enough (you are speaking loudly but no events are firing), make the number closer to -100dB).
 
 
 ## Demo:
@@ -83,7 +83,8 @@ Clone and open example/index.html or [view it online](http://latentflip.com/hark
 
 ## Requirements:
  
-Chrome 27+ currently
+Chrome 27+ 
+Firefox
 
 ## License
 

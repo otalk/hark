@@ -92,28 +92,44 @@ module.exports = function (constraints, cb) {
 };
 
 },{}],5:[function(require,module,exports){
-module.exports = function (element, stream, play) {
-    var autoPlay = (play === false) ? false : true;
+module.exports = function (stream, el, options) {
+    var URL = window.URL;
+    var opts = {
+        autoplay: true,
+        mirror: false,
+        muted: false
+    };
+    var element = el || document.createElement('video');
+    var item;
 
-    if (autoPlay) element.autoplay = true;
-
-    // handle mozilla case
-    if (window.mozGetUserMedia) {
-        element.mozSrcObject = stream;
-        if (autoPlay) element.play();
-    } else {
-        if (typeof element.srcObject !== 'undefined') {
-            element.srcObject = stream;
-        } else if (typeof element.mozSrcObject !== 'undefined') {
-            element.mozSrcObject = stream;
-        } else if (typeof element.src !== 'undefined') {
-            element.src = URL.createObjectURL(stream);
-        } else {
-            return false;
+    if (options) {
+        for (item in options) {
+            opts[item] = options[item];
         }
     }
 
-    return true;
+    if (opts.autoplay) element.autoplay = 'autoplay';
+    if (opts.muted) element.muted = true;
+    if (opts.mirror) {
+        ['', 'moz', 'webkit', 'o', 'ms'].forEach(function (prefix) {
+            var styleName = prefix ? prefix + 'Transform' : 'transform';
+            element.style[styleName] = 'scaleX(-1)';
+        });
+    }
+
+    // this first one should work most everywhere now
+    // but we have a few fallbacks just in case.
+    if (URL && URL.createObjectURL) {
+        element.src = URL.createObjectURL(stream);
+    } else if (element.srcObject) {
+        element.srcObject = stream;
+    } else if (element.mozSrcObject) {
+        element.mozSrcObject = stream;
+    } else {
+        return false;
+    }
+
+    return element;
 };
 
 },{}],2:[function(require,module,exports){
@@ -145,10 +161,11 @@ module.exports = function(stream, options) {
 
   //Config
   var options = options || {},
-      smoothing = (options.smoothing || 0.5),
-      interval = (options.interval || 100),
+      smoothing = (options.smoothing || 0.1),
+      interval = (options.interval || 50),
       threshold = options.threshold,
       play = options.play,
+      history = options.history || 10,
       running = true;
 
   //Setup Audio Context
@@ -167,7 +184,7 @@ module.exports = function(stream, options) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;
-    threshold = threshold || -65;
+    threshold = threshold || -45;
   } else {
     //WebRTC Stream
     sourceNode = audioContext.createMediaStreamSource(stream);
@@ -195,6 +212,10 @@ module.exports = function(stream, options) {
       harker.emit('stopped_speaking');
     }
   };
+  harker.speakingHistory = [];
+  for (var i = 0; i < history; i++) {
+      harker.speakingHistory.push(0);
+  }
 
   // Poll the analyser node to determine if speaking
   // and emit events if changed
@@ -210,17 +231,27 @@ module.exports = function(stream, options) {
 
       harker.emit('volume_change', currentVolume, threshold);
 
-      if (currentVolume > threshold) {
-        if (!harker.speaking) {
+      var history = 0;
+      if (currentVolume > threshold && !harker.speaking) {
+        // trigger quickly, short history
+        for (var i = harker.speakingHistory.length - 3; i < harker.speakingHistory.length; i++) {
+          history += harker.speakingHistory[i];
+        }
+        if (history >= 2) {
           harker.speaking = true;
           harker.emit('speaking');
         }
-      } else {
-        if (harker.speaking) {
+      } else if (currentVolume < threshold && harker.speaking) {
+        for (var i = 0; i < harker.speakingHistory.length; i++) {
+          history += harker.speakingHistory[i];
+        }
+        if (history == 0) {
           harker.speaking = false;
           harker.emit('stopped_speaking');
         }
       }
+      harker.speakingHistory.shift();
+      harker.speakingHistory.push(0 + (currentVolume > threshold));
 
       looper();
     }, interval);
