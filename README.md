@@ -56,7 +56,7 @@ speech.on('speaking', function() {
 * hark returns an event emitter with the following events:
   * `speaking` emitted when the stream appears to be speaking
   * `stopped_speaking` emitted when the audio doesn't seem to be speaking
-  * `current_volume` emitted on every poll event by the event emitter with the current volume (in decibels) and the current threshold for speech
+  * `volume_change` emitted on every poll event by the event emitter with the current volume (in decibels) and the current threshold for speech
 * The hark object also has the following methods to update the config of hark. Both of these options can be passed in on instantiation, but you may wish to alter them either for debug or fine tuning as your app runs.
   * `setInterval(interval_in_ms)` change 
   * `setThreshold(threshold_in_db)` change the minimum volume at which the audio will emit a `speaking` event
