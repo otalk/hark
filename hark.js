@@ -45,7 +45,7 @@ module.exports = function(stream, options) {
   fftBins = new Float32Array(analyser.fftSize);
 
   if (stream.jquery) stream = stream[0];
-  if (stream instanceof HTMLAudioElement) {
+  if (stream instanceof HTMLAudioElement || stream instanceof HTMLVideoElement) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;

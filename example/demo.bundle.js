@@ -2,14 +2,41 @@
 var hark = require('../hark.js');
 var bows = require('bows');
 
+var iraVolumes = [];
 var tagVolumes = [];
 var streamVolumes = [];
 var referenceVolumes = [];
 for (var i = 0; i < 100; i++) {
+  iraVolumes.push(-100);
   tagVolumes.push(-100);
   streamVolumes.push(-100);
   referenceVolumes.push(-50);
 }
+
+(function() {
+  //Video Tag Demo
+  var stream = document.querySelector('#ira video');
+  var speechEvents = hark(stream);
+  var notification = document.querySelector('#iraSpeaking');
+  var log = bows('Video Demo');
+
+  speechEvents.on('speaking', function() {
+    log('speaking');
+    notification.style.display = 'block';
+  });
+
+  speechEvents.on('volume_change', function(volume, threshold) {
+    //log('volume change', volume, threshold);
+    iraVolumes.push(volume);
+    iraVolumes.shift();
+  });
+
+  speechEvents.on('stopped_speaking', function() {
+    log('stopped_speaking');
+    notification.style.display = 'none';
+  });
+})();
+
 
 (function() {
   //Audio Tag Demo
@@ -46,7 +73,7 @@ for (var i = 0; i < 100; i++) {
   getUserMedia(function(err, stream) {
     if (err) throw err
 
-    attachmediastream(stream, document.querySelector('video'));
+    attachmediastream(stream, document.querySelector('#mic video'));
     var speechEvents = hark(stream);
 
     speechEvents.on('speaking', function() {
@@ -90,6 +117,7 @@ for (var i = 0; i < 100; i++) {
     var drawContext = canvas.getContext('2d');
     drawContext.clearRect (0, 0, canvas.width, canvas.height);
 
+    drawLine(canvas, iraVolumes, 'red');
     drawLine(canvas, tagVolumes, 'green');
     drawLine(canvas, streamVolumes, 'blue');
     drawLine(canvas, referenceVolumes, 'black');
@@ -98,7 +126,42 @@ for (var i = 0; i < 100; i++) {
   window.requestAnimationFrame(draw);
 })();
 
-},{"../hark.js":2,"attachmediastream":3,"bows":5,"getusermedia":4}],3:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":5,"bows":3,"getusermedia":4}],4:[function(require,module,exports){
+// getUserMedia helper by @HenrikJoreteg
+var func = (navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia);
+
+
+module.exports = function (constraints, cb) {
+    var options;
+    var haveOpts = arguments.length === 2;
+    var defaultOpts = {video: true, audio: true};
+
+    // make constraints optional
+    if (!haveOpts) {
+        cb = constraints;
+        constraints = defaultOpts;
+    }
+
+    // treat lack of browser support like an error
+    if (!func) {
+        // throw proper error per spec
+        var error = new Error('NavigatorUserMediaError');
+        error.reason = "NOT_SUPPORTED";
+        return cb(error);
+    }
+
+    func.call(navigator, constraints, function (stream) {
+        cb(null, stream);
+    }, function (err) {
+        err.reason = err.name || "PERMISSION_DENIED";
+        cb(err);
+    });
+};
+
+},{}],5:[function(require,module,exports){
 module.exports = function (stream, el, options) {
     var URL = window.URL;
     var opts = {
@@ -137,41 +200,6 @@ module.exports = function (stream, el, options) {
     }
 
     return element;
-};
-
-},{}],4:[function(require,module,exports){
-// getUserMedia helper by @HenrikJoreteg
-var func = (navigator.getUserMedia ||
-            navigator.webkitGetUserMedia ||
-            navigator.mozGetUserMedia ||
-            navigator.msGetUserMedia);
-
-
-module.exports = function (constraints, cb) {
-    var options;
-    var haveOpts = arguments.length === 2;
-    var defaultOpts = {video: true, audio: true};
-
-    // make constraints optional
-    if (!haveOpts) {
-        cb = constraints;
-        constraints = defaultOpts;
-    }
-
-    // treat lack of browser support like an error
-    if (!func) {
-        // throw proper error per spec
-        var error = new Error('NavigatorUserMediaError');
-        error.reason = "NOT_SUPPORTED";
-        return cb(error);
-    }
-
-    func.call(navigator, constraints, function (stream) {
-        cb(null, stream);
-    }, function (err) {
-        err.reason = err.name || "PERMISSION_DENIED";
-        cb(err);
-    });
 };
 
 },{}],2:[function(require,module,exports){
@@ -222,7 +250,7 @@ module.exports = function(stream, options) {
   fftBins = new Float32Array(analyser.fftSize);
 
   if (stream.jquery) stream = stream[0];
-  if (stream instanceof HTMLAudioElement) {
+  if (stream instanceof HTMLAudioElement || stream instanceof HTMLVideoElement) {
     //Audio Tag
     sourceNode = audioContext.createMediaElementSource(stream);
     if (typeof play === 'undefined') play = true;
@@ -445,7 +473,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     return result;
 };
 
-},{}],5:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
