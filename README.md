@@ -8,7 +8,7 @@ With browserify:
 
 Without browserify download and use:
 
-[hark.bundle.js](https://raw.github.com/latentflip/hark/master/hark.bundle.js)
+[hark.bundle.js](https://raw.github.com/otalk/hark/master/hark.bundle.js)
 
 
 ## Example:
@@ -85,6 +85,8 @@ Clone and open example/index.html or [view it online](http://latentflip.com/hark
  
 Chrome 27+ 
 Firefox
+
+Note that in Chrome this currently does not work for remote webrtc mediastreams. Track [this chrome bug](https://code.google.com/p/chromium/issues/detail?id=121673) for the status of the integration between WebRTC and WebAudio. 
 
 ## License
 
