@@ -126,7 +126,7 @@ for (var i = 0; i < 100; i++) {
   window.requestAnimationFrame(draw);
 })();
 
-},{"../hark.js":2,"attachmediastream":5,"bows":3,"getusermedia":4}],4:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":5,"bows":4,"getusermedia":3}],3:[function(require,module,exports){
 // getUserMedia helper by @HenrikJoreteg
 var func = (navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -219,7 +219,7 @@ function getMaxVolume (analyser, fftBins) {
 }
 
 
-var audioContextType = window.webkitAudioContext || window.AudioContext;
+var audioContextType = window.AudioContext || window.webkitAudioContext;
 // use a single audio context due to hardware limits
 var audioContext = null;
 module.exports = function(stream, options) {
@@ -473,7 +473,7 @@ WildEmitter.prototype.getWildcardCallbacks = function (eventName) {
     return result;
 };
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
