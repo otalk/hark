@@ -85,6 +85,7 @@ Clone and open example/index.html or [view it online](http://otalk.github.io/har
  
 Chrome 27+ 
 Firefox
+Microsoft Edge
 
 Note that in Chrome this currently does not work for remote webrtc mediastreams. Track [this chrome bug](https://code.google.com/p/chromium/issues/detail?id=121673) for the status of the integration between WebRTC and WebAudio. 
 
