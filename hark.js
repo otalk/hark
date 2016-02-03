@@ -68,7 +68,7 @@ module.exports = function(stream, options) {
   harker.setInterval = function(i) {
     interval = i;
   };
-  
+
   harker.stop = function() {
     running = false;
     harker.emit('volume_change', -100, threshold);
@@ -76,6 +76,8 @@ module.exports = function(stream, options) {
       harker.speaking = false;
       harker.emit('stopped_speaking');
     }
+    analyser.disconnect();
+    sourceNode.disconnect();
   };
   harker.speakingHistory = [];
   for (var i = 0; i < history; i++) {
@@ -86,12 +88,12 @@ module.exports = function(stream, options) {
   // and emit events if changed
   var looper = function() {
     setTimeout(function() {
-    
+
       //check if stop has been called
       if(!running) {
         return;
       }
-      
+
       var currentVolume = getMaxVolume(analyser, fftBins);
 
       harker.emit('volume_change', currentVolume, threshold);
