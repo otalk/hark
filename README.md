@@ -78,7 +78,7 @@ Fine tuning the volume threshold is the main configuration setting for how this 
 
 ## Demo:
 
-Clone and open example/index.html or [view it online](http://otalk.github.io/hark/example/)
+Clone and open example/index.html or [view it online](https://otalk.github.io/hark/example/)
 
 
 ## Requirements:
