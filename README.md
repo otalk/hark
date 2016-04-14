@@ -83,11 +83,9 @@ Clone and open example/index.html or [view it online](https://otalk.github.io/ha
 
 ## Requirements:
  
-Chrome 27+ 
-Firefox
-Microsoft Edge
-
-Note that in Chrome this currently does not work for remote webrtc mediastreams. Track [this chrome bug](https://code.google.com/p/chromium/issues/detail?id=121673) for the status of the integration between WebRTC and WebAudio. 
+* Chrome 27+, remote streams require Chrome 49+
+* Firefox
+* Microsoft Edge, support for remote streams is under consideration
 
 ## License
 
