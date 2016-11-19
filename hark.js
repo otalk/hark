@@ -14,7 +14,10 @@ function getMaxVolume (analyser, fftBins) {
 }
 
 
-var audioContextType = window.AudioContext || window.webkitAudioContext;
+var audioContextType;
+if (typeof window !== 'undefined') {
+  audioContextType = window.AudioContext || window.webkitAudioContext;
+}
 // use a single audio context due to hardware limits
 var audioContext = null;
 module.exports = function(stream, options) {
