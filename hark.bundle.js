@@ -1,27 +1,26 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("hark",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeHark=e}else"undefined"!=typeof window?window.hark=e():global.hark=e()})(function(){var define,ses,bootstrap,module,exports;
 return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+
 var WildEmitter = require('wildemitter');
 
 function getMaxVolume (analyser, fftBins) {
   var maxVolume = -Infinity;
-  analyser.getFloatFrequencyData(fftBins);
-
   for(var i=4, ii=fftBins.length; i < ii; i++) {
     if (fftBins[i] > maxVolume && fftBins[i] < 0) {
       maxVolume = fftBins[i];
     }
   };
-
   return maxVolume;
 }
 
-
-var audioContextType = window.AudioContext || window.webkitAudioContext;
+var audioContextType;
+if (typeof window !== 'undefined') {
+  audioContextType = window.AudioContext || window.webkitAudioContext;
+}
 // use a single audio context due to hardware limits
 var audioContext = null;
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
-
 
   // make it not break in non-supported browsers
   if (!audioContextType) return harker;
@@ -33,6 +32,7 @@ module.exports = function(stream, options) {
       threshold = options.threshold,
       play = options.play,
       history = options.history || 10,
+      frequencyRange = options.frequencyRange || [85, 255], // [85, 255] is the typical fundamental freq range for human speech
       running = true;
 
   //Setup Audio Context
@@ -42,9 +42,12 @@ module.exports = function(stream, options) {
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 512;
+  analyser.fftSize = 2048;
   analyser.smoothingTimeConstant = smoothing;
-  fftBins = new Float32Array(analyser.fftSize);
+  fftBins = new Float32Array(analyser.frequencyBinCount);
+  // Freq spread is the number of hz each bin accounts for
+  const frequencySpread = audioContext.sampleRate/(analyser.fftSize)
+
 
   if (stream.jquery) stream = stream[0];
   if (stream instanceof HTMLAudioElement || stream instanceof HTMLVideoElement) {
@@ -81,9 +84,22 @@ module.exports = function(stream, options) {
     analyser.disconnect();
     sourceNode.disconnect();
   };
-  harker.speakingHistory = [];
-  for (var i = 0; i < history; i++) {
-      harker.speakingHistory.push(0);
+
+  harker.speakingHistory = new Array(history).fill(0)
+
+  // Check if the volume of fundamental freq is > threshold
+  function frequencyAnalyser(range, frequencySpread, fftBins) {
+    analyser.getFloatFrequencyData(fftBins);
+    const start = range[0];
+    const end = range[1];
+    const startIndex = Math.round(start / frequencySpread);
+    const endIndex = Math.round(end / frequencySpread);
+    const fundamentalFreqArray = fftBins.slice(startIndex, endIndex);
+    const avgVol = fundamentalFreqArray.reduce(function(a, b) {
+      return a + b
+    }, 0) / fundamentalFreqArray.length;
+    if (avgVol > threshold) return 1;
+    return 0;
   }
 
   // Poll the analyser node to determine if speaking
@@ -96,31 +112,33 @@ module.exports = function(stream, options) {
         return;
       }
 
-      var currentVolume = getMaxVolume(analyser, fftBins);
+      const currentVolume = getMaxVolume(analyser, fftBins);
+      const aboveThreshold = frequencyAnalyser([85, 255], frequencySpread, fftBins)
 
       harker.emit('volume_change', currentVolume, threshold);
 
-      var history = 0;
-      if (currentVolume > threshold && !harker.speaking) {
-        // trigger quickly, short history
-        for (var i = harker.speakingHistory.length - 3; i < harker.speakingHistory.length; i++) {
-          history += harker.speakingHistory[i];
-        }
-        if (history >= 2) {
-          harker.speaking = true;
-          harker.emit('speaking');
-        }
-      } else if (currentVolume < threshold && harker.speaking) {
+      var timesAboveThreshold = 0;
+      if (aboveThreshold && !harker.speaking) {
         for (var i = 0; i < harker.speakingHistory.length; i++) {
-          history += harker.speakingHistory[i];
+          timesAboveThreshold += harker.speakingHistory[i];
         }
-        if (history == 0) {
+        //Need to hit the threshold 5 times in order to be speaking.
+        if (timesAboveThreshold >= 5) {
+          harker.speaking = true;
+          harker.emit('speaking')
+        }
+      } else if (!aboveThreshold && harker.speaking) {
+        for (var i = 0; i < harker.speakingHistory.length; i++) {
+          timesAboveThreshold += harker.speakingHistory[i];
+        }
+        if (timesAboveThreshold == 0) {
           harker.speaking = false;
           harker.emit('stopped_speaking');
         }
       }
+
       harker.speakingHistory.shift();
-      harker.speakingHistory.push(0 + (currentVolume > threshold));
+      harker.speakingHistory.push(0 + aboveThreshold);
 
       looper();
     }, interval);
