@@ -35,6 +35,7 @@ module.exports = function(stream, options) {
       play = options.play,
       history = options.history || 10,
       frequencyRange = options.frequencyRange || [85, 255], // [85, 255] is the typical fundamental freq range for human speech
+      fftSize = options.fftSize || 512,
       running = true;
 
   //Setup Audio Context
@@ -44,7 +45,7 @@ module.exports = function(stream, options) {
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 2048;
+  analyser.fftSize = fftSize;
   analyser.smoothingTimeConstant = smoothing;
   fftBins = new Float32Array(analyser.frequencyBinCount);
   // Freq spread is the number of hz each bin accounts for
