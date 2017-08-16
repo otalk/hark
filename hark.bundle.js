@@ -16,7 +16,10 @@ function getMaxVolume (analyser, fftBins) {
 }
 
 
-var audioContextType = window.AudioContext || window.webkitAudioContext;
+var audioContextType;
+if (typeof window !== 'undefined') {
+  audioContextType = window.AudioContext || window.webkitAudioContext;
+}
 // use a single audio context due to hardware limits
 var audioContext = null;
 module.exports = function(stream, options) {
@@ -33,6 +36,7 @@ module.exports = function(stream, options) {
       threshold = options.threshold,
       play = options.play,
       history = options.history || 10,
+      audioContext = options.audioContext || null,
       running = true;
 
   //Setup Audio Context
@@ -44,7 +48,7 @@ module.exports = function(stream, options) {
   analyser = audioContext.createAnalyser();
   analyser.fftSize = 512;
   analyser.smoothingTimeConstant = smoothing;
-  fftBins = new Float32Array(analyser.fftSize);
+  fftBins = new Float32Array(analyser.frequencyBinCount);
 
   if (stream.jquery) stream = stream[0];
   if (stream instanceof HTMLAudioElement || stream instanceof HTMLVideoElement) {
