@@ -58,14 +58,12 @@ speech.on('speaking', function() {
   * `stopped_speaking` emitted when the audio doesn't seem to be speaking
   * `volume_change` emitted on every poll event by the event emitter with the current volume (in decibels) and the current threshold for speech
 * The hark object also has the following methods to update the config of hark. Both of these options can be passed in on instantiation, but you may wish to alter them either for debug or fine tuning as your app runs.
-  * `setInterval(interval_in_ms)` change 
   * `setThreshold(threshold_in_db)` change the minimum volume at which the audio will emit a `speaking` event
 * hark can be stopped by calling this method
   * `stop()` will stop the polling and events will not be emitted.
 
 ## Options
 
-* `interval` (optional, default 100ms) how frequently the analyser polls the audio stream to check if speaking has started or stopped. This will also be the frequency of the `volume_change` events.
 * `threshold` (optional, default -50db)  the volume at which `speaking`/`stopped\_speaking` events will be fired
 * `play` (optional, default true for audio tags, false for webrtc streams) whether the audio stream should also be piped to the speakers, or just swallowed by the analyser. Typically for audio tags you would want to hear them, but for microphone based webrtc streams you may not to avoid feedback.
 
