@@ -1,6 +1,6 @@
 {
   "name": "hark",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Converts an audio stream to speech events in the browser",
   "main": "hark.js",
   "scripts": {},

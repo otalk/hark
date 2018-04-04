@@ -65,6 +65,19 @@ module.exports = function(stream, options) {
 
   harker.speaking = false;
 
+  harker.suspend = function() {
+    audioContext.suspend();
+  }
+  harker.resume = function() {
+    audioContext.resume();
+  }
+  Object.defineProperty(harker, 'state', { get: function() {
+    return audioContext.state;
+  }});
+  audioContext.onstatechange = function() {
+    harker.emit('state_change', audioContext.state);
+  }
+
   harker.setThreshold = function(t) {
     threshold = t;
   };
