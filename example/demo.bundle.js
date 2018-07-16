@@ -126,7 +126,7 @@ for (var i = 0; i < 100; i++) {
   window.requestAnimationFrame(draw);
 })();
 
-},{"../hark.js":2,"attachmediastream":4,"bows":5,"getusermedia":3}],3:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":5,"bows":3,"getusermedia":4}],4:[function(require,module,exports){
 // getUserMedia helper by @HenrikJoreteg
 var func = (navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -161,7 +161,7 @@ module.exports = function (constraints, cb) {
     });
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = function (stream, el, options) {
     var URL = window.URL;
     var opts = {
@@ -271,10 +271,10 @@ module.exports = function(stream, options) {
   harker.speaking = false;
 
   harker.suspend = function() {
-    audioContext.suspend();
+    return audioContext.suspend();
   }
   harker.resume = function() {
-    audioContext.resume();
+    return audioContext.resume();
   }
   Object.defineProperty(harker, 'state', { get: function() {
     return audioContext.state;
@@ -506,7 +506,7 @@ WildEmitter.mixin = function (constructor) {
 
 WildEmitter.mixin(WildEmitter);
 
-},{}],5:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
