@@ -65,10 +65,10 @@ module.exports = function(stream, options) {
   harker.speaking = false;
 
   harker.suspend = function() {
-    audioContext.suspend();
+    return audioContext.suspend();
   }
   harker.resume = function() {
-    audioContext.resume();
+    return audioContext.resume();
   }
   Object.defineProperty(harker, 'state', { get: function() {
     return audioContext.state;
