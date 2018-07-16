@@ -34,6 +34,7 @@ module.exports = function(stream, options) {
       threshold = options.threshold,
       play = options.play,
       history = options.history || 10,
+      audioContext = options.audioContext || null,
       running = true;
 
   //Setup Audio Context
