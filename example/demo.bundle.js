@@ -126,7 +126,7 @@ for (var i = 0; i < 100; i++) {
   window.requestAnimationFrame(draw);
 })();
 
-},{"../hark.js":2,"attachmediastream":5,"bows":3,"getusermedia":4}],4:[function(require,module,exports){
+},{"../hark.js":2,"attachmediastream":5,"bows":4,"getusermedia":3}],3:[function(require,module,exports){
 // getUserMedia helper by @HenrikJoreteg
 var func = (navigator.getUserMedia ||
             navigator.webkitGetUserMedia ||
@@ -228,7 +228,6 @@ var audioContext = null;
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
 
-
   // make it not break in non-supported browsers
   if (!audioContextType) return harker;
 
@@ -239,13 +238,11 @@ module.exports = function(stream, options) {
       threshold = options.threshold,
       play = options.play,
       history = options.history || 10,
-      audioContext = options.audioContext || null,
       running = true;
 
-  //Setup Audio Context
-  if (!audioContext) {
-    audioContext = new audioContextType();
-  }
+  // Ensure that just a single AudioContext is internally created
+  audioContext = options.audioContext || audioContext || new audioContextType();
+
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
@@ -346,7 +343,6 @@ module.exports = function(stream, options) {
     }, interval);
   };
   looper();
-
 
   return harker;
 }
@@ -506,7 +502,7 @@ WildEmitter.mixin = function (constructor) {
 
 WildEmitter.mixin(WildEmitter);
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function(window) {
   var logger = require('andlog'),
       goldenRatio = 0.618033988749895,
@@ -545,8 +541,18 @@ WildEmitter.mixin(WildEmitter);
 },{"andlog":7}],7:[function(require,module,exports){
 // follow @HenrikJoreteg and @andyet if you like this ;)
 (function () {
+    function getLocalStorageSafely() {
+        var localStorage;
+        try {
+            localStorage = window.localStorage;
+        } catch (e) {
+            // failed: access to localStorage is denied
+        }
+        return localStorage;
+    }
+
     var inNode = typeof window === 'undefined',
-        ls = !inNode && window.localStorage,
+        ls = !inNode && getLocalStorageSafely(),
         out = {};
 
     if (inNode) {
