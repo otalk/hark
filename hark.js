@@ -23,7 +23,6 @@ var audioContext = null;
 module.exports = function(stream, options) {
   var harker = new WildEmitter();
 
-
   // make it not break in non-supported browsers
   if (!audioContextType) return harker;
 
@@ -34,13 +33,11 @@ module.exports = function(stream, options) {
       threshold = options.threshold,
       play = options.play,
       history = options.history || 10,
-      audioContext = options.audioContext || null,
       running = true;
 
-  //Setup Audio Context
-  if (!audioContext) {
-    audioContext = new audioContextType();
-  }
+  // Ensure that just a single AudioContext is internally created
+  audioContext = options.audioContext || audioContext || new audioContextType();
+
   var sourceNode, fftBins, analyser;
 
   analyser = audioContext.createAnalyser();
@@ -141,7 +138,6 @@ module.exports = function(stream, options) {
     }, interval);
   };
   looper();
-
 
   return harker;
 }

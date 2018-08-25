@@ -68,7 +68,7 @@ speech.on('speaking', function() {
 * `interval` (optional, default 100ms) how frequently the analyser polls the audio stream to check if speaking has started or stopped. This will also be the frequency of the `volume_change` events.
 * `threshold` (optional, default -50db)  the volume at which `speaking`/`stopped\_speaking` events will be fired
 * `play` (optional, default true for audio tags, false for webrtc streams) whether the audio stream should also be piped to the speakers, or just swallowed by the analyser. Typically for audio tags you would want to hear them, but for microphone based webrtc streams you may not to avoid feedback.
-* `audioContext` (optional, default is to create a new context) If you have already created an `AudioContext`, you can pass it to hark to avoid unnecessarily creating more than one.
+* `audioContext` (optional, default is to create a single context) If you have already created an `AudioContext`, you can pass it to hark to use it instead of an internally generated one.
 
 ## Understanding dB/volume threshold
 
